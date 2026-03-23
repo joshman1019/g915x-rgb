@@ -13,8 +13,8 @@ from .backend import G915XBackend, KeyboardNotFoundError, VENDOR_ID, PRODUCT_ID
 from .config import get_last_profile
 from .profile import Profile, create_default_profile, load_all_profiles
 
-POLL_INTERVAL = 5  # seconds between checks
-SETTLE_DELAY = 3   # seconds to wait after detecting device before applying
+POLL_INTERVAL = 2  # seconds between checks
+SETTLE_DELAY = 2   # seconds to wait after detecting device before applying
 
 
 def device_present() -> bool:
