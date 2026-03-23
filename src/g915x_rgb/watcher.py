@@ -48,25 +48,36 @@ def find_profile(name: str | None) -> Profile:
     return create_default_profile()
 
 
-def apply_once() -> bool:
-    """Open device, apply profile, close device. Returns True on success."""
-    try:
-        profile_name = get_last_profile()
-        profile = find_profile(profile_name)
-        kb = G915XBackend()
-        kb.connect()
-        colors = profile.get_all_key_colors()
-        kb.set_all_keys(0, 0, 0)
-        time.sleep(0.1)
-        kb.apply_key_colors(colors)
-        kb.disconnect()
-        print(f"Applied profile: {profile.name}")
-        return True
-    except KeyboardNotFoundError:
-        return False
-    except Exception as e:
-        print(f"Error applying profile: {e}", file=sys.stderr)
-        return False
+def apply_once(retries: int = 3) -> bool:
+    """Open device, apply profile, close device. Returns True on success.
+
+    Retries on PermissionError since udev rules may not have applied yet
+    when the device first appears.
+    """
+    profile_name = get_last_profile()
+    profile = find_profile(profile_name)
+
+    for attempt in range(retries):
+        try:
+            kb = G915XBackend()
+            kb.connect()
+            colors = profile.get_all_key_colors()
+            kb.set_all_keys(0, 0, 0)
+            time.sleep(0.1)
+            kb.apply_key_colors(colors)
+            kb.disconnect()
+            print(f"Applied profile: {profile.name}")
+            return True
+        except KeyboardNotFoundError:
+            return False
+        except PermissionError:
+            print(f"Permission denied (attempt {attempt + 1}/{retries}), "
+                  "waiting for udev rules...")
+            time.sleep(2)
+        except Exception as e:
+            print(f"Error applying profile: {e}", file=sys.stderr)
+            return False
+    return False
 
 
 def main():
