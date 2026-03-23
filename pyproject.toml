@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "g915x-rgb"
+version = "0.1.0"
+description = "GUI RGB controller for Logitech G915 X keyboard on Linux"
+requires-python = ">=3.11"
+dependencies = [
+    "PyGObject",
+    "pycairo",
+    "dbus-python",
+]
+
+[project.scripts]
+g915x-rgb = "g915x_rgb.app:main"
+g915x-rgb-daemon = "g915x_rgb.daemon:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

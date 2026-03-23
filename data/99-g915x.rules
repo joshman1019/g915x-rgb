@@ -1,0 +1,2 @@
+# Logitech G915 X - grant access to input group for RGB control
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c359", MODE="0660", GROUP="input"
