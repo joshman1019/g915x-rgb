@@ -10,11 +10,8 @@ ExecStart=/usr/bin/python3 -m g915x_rgb.apply
 Environment=PYTHONPATH=/home/joshua/Development/g915x-rgb/src
 RemainAfterExit=no
 
-# Retry on failure (keyboard may not be ready immediately)
-Restart=on-failure
-RestartSec=3
-StartLimitBurst=5
-StartLimitIntervalSec=60
+# No auto-restart; udev handles reconnection triggers
+Restart=no
 
 [Install]
 WantedBy=graphical-session.target
