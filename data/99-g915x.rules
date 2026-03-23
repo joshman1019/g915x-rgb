@@ -1,2 +1,5 @@
 # Logitech G915 X - grant access to input group for RGB control
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c359", MODE="0660", GROUP="input"
+
+# Re-apply RGB profile when keyboard is (re)connected
+ACTION=="add", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c359", TAG+="systemd", ENV{SYSTEMD_USER_WANTS}+="g915x-rgb.service"

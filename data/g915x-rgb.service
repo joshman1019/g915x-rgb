@@ -5,6 +5,7 @@ Wants=graphical-session.target
 
 [Service]
 Type=oneshot
+ExecStartPre=/usr/bin/sleep 2
 ExecStart=/usr/bin/python3 -m g915x_rgb.apply
 Environment=PYTHONPATH=/home/joshua/Development/g915x-rgb/src
 RemainAfterExit=no
