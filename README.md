@@ -39,12 +39,13 @@ sudo usermod -aG input $USER
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/g915x-rgb.git
+git clone https://github.com/joshman1019/g915x-rgb.git
 cd g915x-rgb
 ./install.sh
 ```
 
 The install script:
+
 1. Installs udev rules for hidraw device access
 2. Installs a systemd user service to apply your profile on login
 3. Creates a desktop entry for the GUI
@@ -101,13 +102,13 @@ The G915 X communicates via Logitech's HID++ 4.2 protocol over a USB HID interfa
 
 ### Key Address Map
 
-| Key Group | Address Range | Notes |
-|-----------|--------------|-------|
-| Standard keys (A-Z, 0-9, etc.) | `HID keycode - 3` | Standard offset |
-| Modifiers (Shift, Ctrl, Alt) | `0x63-0x6F` | Logitech-specific |
-| G-keys (G1-G9) | `0xB4-0xBC` | Logitech-specific |
-| Media keys | `0x9B-0x9E` | Logitech-specific |
-| Logo | `0xD2` | Logitech-specific |
+| Key Group                      | Address Range     | Notes             |
+| ------------------------------ | ----------------- | ----------------- |
+| Standard keys (A-Z, 0-9, etc.) | `HID keycode - 3` | Standard offset   |
+| Modifiers (Shift, Ctrl, Alt)   | `0x63-0x6F`       | Logitech-specific |
+| G-keys (G1-G9)                 | `0xB4-0xBC`       | Logitech-specific |
+| Media keys                     | `0x9B-0x9E`       | Logitech-specific |
+| Logo                           | `0xD2`            | Logitech-specific |
 
 ## Contributing
 
