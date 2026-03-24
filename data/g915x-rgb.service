@@ -1,12 +1,12 @@
 [Unit]
-Description=G915 X RGB - Apply keyboard lighting profile
+Description=G915 X RGB - Keyboard lighting watcher
 After=graphical-session.target
 
 [Service]
-Type=oneshot
-ExecStartPre=/usr/bin/sleep 3
-ExecStart=/usr/bin/bash -c 'PYTHONPATH=/home/joshua/Development/g915x-rgb/src /usr/bin/python3 -m g915x_rgb.apply'
-Restart=no
+Type=simple
+ExecStart=/usr/bin/bash -c 'PYTHONPATH=/home/joshua/Development/g915x-rgb/src /usr/bin/python3 -m g915x_rgb.watcher'
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=graphical-session.target
