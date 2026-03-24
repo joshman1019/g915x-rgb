@@ -9,6 +9,7 @@ import os
 import sys
 import time
 
+from .animation import play_arch_animation
 from .backend import G915XBackend, KeyboardNotFoundError, VENDOR_ID, PRODUCT_ID
 from .config import get_last_profile
 from .profile import Profile, create_default_profile, load_all_profiles
@@ -61,6 +62,8 @@ def apply_once(retries: int = 3) -> bool:
         try:
             kb = G915XBackend()
             kb.connect()
+            if profile.startup_animation:
+                play_arch_animation(kb)
             colors = profile.get_all_key_colors()
             kb.set_all_keys(0, 0, 0)
             time.sleep(0.1)

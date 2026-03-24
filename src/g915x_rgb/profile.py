@@ -20,6 +20,7 @@ class Profile:
     name: str
     group_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     key_colors: dict[int, tuple[int, int, int]] = field(default_factory=dict)
+    startup_animation: bool = False
 
     def get_effective_color(self, address: int) -> tuple[int, int, int]:
         """Get the color for a key, checking individual first, then group."""
@@ -46,6 +47,7 @@ class Profile:
         return {
             "name": self.name,
             "version": 1,
+            "startup_animation": self.startup_animation,
             "groups": {
                 g: f"{r:02x}{g_:02x}{b:02x}"
                 for g, (r, g_, b) in self.group_colors.items()
@@ -59,6 +61,7 @@ class Profile:
     @classmethod
     def from_dict(cls, data: dict) -> "Profile":
         p = cls(name=data.get("name", "Unnamed"))
+        p.startup_animation = data.get("startup_animation", False)
 
         for group, color_hex in data.get("groups", {}).items():
             p.group_colors[group] = _parse_hex(color_hex)
