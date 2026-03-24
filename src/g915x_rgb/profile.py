@@ -21,6 +21,7 @@ class Profile:
     group_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     key_colors: dict[int, tuple[int, int, int]] = field(default_factory=dict)
     startup_animation: str = ""  # Animation name or empty for none
+    _saved_path: Path | None = field(default=None, repr=False)
 
     def get_effective_color(self, address: int) -> tuple[int, int, int]:
         """Get the color for a key, checking individual first, then group."""
@@ -78,18 +79,23 @@ class Profile:
         return p
 
     def save(self) -> Path:
-        """Save profile to disk."""
+        """Save profile to disk, removing the old file if renamed."""
         PROFILES_DIR.mkdir(parents=True, exist_ok=True)
         filename = _safe_filename(self.name) + ".json"
         path = PROFILES_DIR / filename
+        if self._saved_path and self._saved_path != path and self._saved_path.exists():
+            self._saved_path.unlink()
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
+        self._saved_path = path
         return path
 
     @classmethod
     def load(cls, path: Path) -> "Profile":
         with open(path) as f:
-            return cls.from_dict(json.load(f))
+            p = cls.from_dict(json.load(f))
+            p._saved_path = path
+            return p
 
 
 def list_profiles() -> list[Path]:

@@ -98,7 +98,7 @@ class KeyboardWidget(Gtk.DrawingArea):
 
     def _key_rect(self, key: KeyDef) -> tuple[float, float, float, float]:
         x = self._offset_x + key.x * self._scale
-        y = self._offset_y + (key.y + 0.5) * self._scale
+        y = self._offset_y + (key.y + 1.0) * self._scale
         w = key.w * self._scale
         h = key.h * self._scale
         pad = KEY_PADDING * self._scale

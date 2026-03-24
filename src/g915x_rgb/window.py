@@ -110,6 +110,17 @@ class MainWindow(Adw.ApplicationWindow):
         settings_label.add_css_class("heading")
         settings_box.append(settings_label)
 
+        name_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        name_row.set_margin_top(8)
+        name_label = Gtk.Label(label="Profile name", xalign=0)
+        name_label.set_hexpand(True)
+        name_row.append(name_label)
+        self._name_entry = Gtk.Entry()
+        self._name_entry.set_width_chars(20)
+        self._name_entry.connect("changed", self._on_name_changed)
+        name_row.append(self._name_entry)
+        settings_box.append(name_row)
+
         anim_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         anim_row.set_margin_top(8)
         anim_label = Gtk.Label(label="Startup animation", xalign=0)
@@ -156,6 +167,10 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_profile_selected(self, profile: Profile) -> None:
         self._current_profile = profile
         self._group_panel.set_group_colors(profile.group_colors)
+        # Update name entry without triggering the changed callback
+        self._name_entry.handler_block_by_func(self._on_name_changed)
+        self._name_entry.set_text(profile.name)
+        self._name_entry.handler_unblock_by_func(self._on_name_changed)
         # Set dropdown to match profile's animation
         try:
             idx = self._anim_names.index(profile.startup_animation)
@@ -203,6 +218,11 @@ class MainWindow(Adw.ApplicationWindow):
         for addr in addresses:
             self._current_profile.key_colors.pop(addr, None)
         self._refresh_keyboard_view()
+
+    def _on_name_changed(self, entry) -> None:
+        if self._current_profile:
+            self._current_profile.name = entry.get_text()
+            self._profile_list.refresh_selected_label()
 
     def _on_anim_changed(self, dropdown, pspec) -> None:
         if self._current_profile:
