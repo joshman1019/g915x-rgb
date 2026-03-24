@@ -30,8 +30,6 @@ class GroupPanel(Gtk.Box):
         grid.set_margin_top(8)
         self.append(grid)
 
-        dialog = Gtk.ColorDialog()
-
         for i, group in enumerate(GROUPS):
             name_label = Gtk.Label(label=group.capitalize(), xalign=0)
             name_label.set_hexpand(True)
@@ -42,8 +40,8 @@ class GroupPanel(Gtk.Box):
             count_label.add_css_class("dim-label")
             grid.attach(count_label, 1, i, 1, 1)
 
-            btn = Gtk.ColorDialogButton(dialog=dialog)
-            btn.set_rgba(_rgb_to_rgba(128, 128, 128))
+            btn = Gtk.ColorDialogButton(dialog=Gtk.ColorDialog())
+            btn.set_rgba(_rgb_to_rgba(0, 0, 0))
             btn.connect("notify::rgba", self._on_color_changed, group)
             grid.attach(btn, 2, i, 1, 1)
             self._color_buttons[group] = btn

@@ -68,6 +68,14 @@ class ProfileList(Gtk.Box):
         if 0 <= self._selected_index < len(self._profiles):
             self._profiles[self._selected_index] = profile
 
+    def refresh_selected_label(self) -> None:
+        """Update the displayed name of the selected profile row."""
+        if 0 <= self._selected_index < len(self._profiles):
+            row = self._listbox.get_row_at_index(self._selected_index)
+            if row:
+                label = row.get_child()
+                label.set_text(self._profiles[self._selected_index].name)
+
     def connect_profile_selected(self, callback) -> None:
         self._on_profile_selected = callback
 

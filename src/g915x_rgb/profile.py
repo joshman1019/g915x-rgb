@@ -20,6 +20,8 @@ class Profile:
     name: str
     group_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     key_colors: dict[int, tuple[int, int, int]] = field(default_factory=dict)
+    startup_animation: str = ""  # Animation name or empty for none
+    _saved_path: Path | None = field(default=None, repr=False)
 
     def get_effective_color(self, address: int) -> tuple[int, int, int]:
         """Get the color for a key, checking individual first, then group."""
@@ -46,6 +48,7 @@ class Profile:
         return {
             "name": self.name,
             "version": 1,
+            "startup_animation": self.startup_animation,
             "groups": {
                 g: f"{r:02x}{g_:02x}{b:02x}"
                 for g, (r, g_, b) in self.group_colors.items()
@@ -59,6 +62,13 @@ class Profile:
     @classmethod
     def from_dict(cls, data: dict) -> "Profile":
         p = cls(name=data.get("name", "Unnamed"))
+        anim = data.get("startup_animation", "")
+        # Migrate old boolean format
+        if anim is True:
+            anim = "arch"
+        elif anim is False:
+            anim = ""
+        p.startup_animation = anim
 
         for group, color_hex in data.get("groups", {}).items():
             p.group_colors[group] = _parse_hex(color_hex)
@@ -69,18 +79,23 @@ class Profile:
         return p
 
     def save(self) -> Path:
-        """Save profile to disk."""
+        """Save profile to disk, removing the old file if renamed."""
         PROFILES_DIR.mkdir(parents=True, exist_ok=True)
         filename = _safe_filename(self.name) + ".json"
         path = PROFILES_DIR / filename
+        if self._saved_path and self._saved_path != path and self._saved_path.exists():
+            self._saved_path.unlink()
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
+        self._saved_path = path
         return path
 
     @classmethod
     def load(cls, path: Path) -> "Profile":
         with open(path) as f:
-            return cls.from_dict(json.load(f))
+            p = cls.from_dict(json.load(f))
+            p._saved_path = path
+            return p
 
 
 def list_profiles() -> list[Path]:

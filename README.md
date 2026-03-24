@@ -117,7 +117,6 @@ Contributions welcome! Key areas for improvement:
 - **Additional keyboard support** - the HID++ protocol is similar across Logitech keyboards. Adapting for G915, G815, or other models should be straightforward.
 - **IFTTT/automation** - auto-switch profiles based on active window (KWin D-Bus integration)
 - **Animation effects** - breathing, wave, reactive key effects
-- **Backlight key** - address not yet identified
 - **Better key layout** - pixel-perfect positioning to match the physical keyboard
 
 ## License
