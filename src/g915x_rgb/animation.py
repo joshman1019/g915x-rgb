@@ -25,7 +25,7 @@ ARCH_KEYS = [
 #      K ; L
 #     M , . /
 PYRAMID_ROWS = [
-    [KEY_BY_NAME[k].address for k in ["M", ",", ".", "/"]],
+    [KEY_BY_NAME[k].address for k in ["M", "/"]],
     [KEY_BY_NAME[k].address for k in ["K", ";", "L"]],
     [KEY_BY_NAME[k].address for k in ["O", "P"]],
     [KEY_BY_NAME[k].address for k in ["0"]],
