@@ -20,7 +20,7 @@ class Profile:
     name: str
     group_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     key_colors: dict[int, tuple[int, int, int]] = field(default_factory=dict)
-    startup_animation: bool = False
+    startup_animation: str = ""  # Animation name or empty for none
 
     def get_effective_color(self, address: int) -> tuple[int, int, int]:
         """Get the color for a key, checking individual first, then group."""
@@ -61,7 +61,13 @@ class Profile:
     @classmethod
     def from_dict(cls, data: dict) -> "Profile":
         p = cls(name=data.get("name", "Unnamed"))
-        p.startup_animation = data.get("startup_animation", False)
+        anim = data.get("startup_animation", "")
+        # Migrate old boolean format
+        if anim is True:
+            anim = "arch"
+        elif anim is False:
+            anim = ""
+        p.startup_animation = anim
 
         for group, color_hex in data.get("groups", {}).items():
             p.group_colors[group] = _parse_hex(color_hex)
