@@ -138,6 +138,32 @@ class MainWindow(Adw.ApplicationWindow):
         anim_row.append(self._anim_dropdown)
         settings_box.append(anim_row)
 
+        # Animation color pickers (visible when animation is selected)
+        self._color_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+
+        primary_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        primary_row.set_margin_top(8)
+        primary_label = Gtk.Label(label="Primary color", xalign=0)
+        primary_label.set_hexpand(True)
+        primary_row.append(primary_label)
+        self._primary_btn = Gtk.ColorButton()
+        self._primary_btn.connect("color-set", self._on_primary_color_set)
+        primary_row.append(self._primary_btn)
+        self._color_box.append(primary_row)
+
+        secondary_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        secondary_row.set_margin_top(4)
+        secondary_label = Gtk.Label(label="Secondary color", xalign=0)
+        secondary_label.set_hexpand(True)
+        secondary_row.append(secondary_label)
+        self._secondary_btn = Gtk.ColorButton()
+        self._secondary_btn.connect("color-set", self._on_secondary_color_set)
+        secondary_row.append(self._secondary_btn)
+        self._color_box.append(secondary_row)
+
+        self._color_box.set_visible(False)
+        settings_box.append(self._color_box)
+
         stack.add_titled(settings_box, "settings", "Settings")
 
         switcher = Gtk.StackSwitcher(stack=stack)
@@ -177,6 +203,16 @@ class MainWindow(Adw.ApplicationWindow):
         except ValueError:
             idx = 0
         self._anim_dropdown.set_selected(idx)
+        self._color_box.set_visible(self._anim_names[idx] != "")
+        # Set color buttons
+        r, g, b = profile.animation_primary
+        rgba_p = Gdk.RGBA()
+        rgba_p.red, rgba_p.green, rgba_p.blue, rgba_p.alpha = r/255, g/255, b/255, 1.0
+        self._primary_btn.set_rgba(rgba_p)
+        r, g, b = profile.animation_secondary
+        rgba_s = Gdk.RGBA()
+        rgba_s.red, rgba_s.green, rgba_s.blue, rgba_s.alpha = r/255, g/255, b/255, 1.0
+        self._secondary_btn.set_rgba(rgba_s)
         self._refresh_keyboard_view()
 
     def _on_group_color_changed(self, group: str, color: tuple[int, int, int]) -> None:
@@ -228,6 +264,19 @@ class MainWindow(Adw.ApplicationWindow):
         if self._current_profile:
             idx = dropdown.get_selected()
             self._current_profile.startup_animation = self._anim_names[idx]
+            self._color_box.set_visible(self._anim_names[idx] != "")
+
+    def _on_primary_color_set(self, btn) -> None:
+        if self._current_profile:
+            rgba = btn.get_rgba()
+            self._current_profile.animation_primary = (
+                int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255))
+
+    def _on_secondary_color_set(self, btn) -> None:
+        if self._current_profile:
+            rgba = btn.get_rgba()
+            self._current_profile.animation_secondary = (
+                int(rgba.red * 255), int(rgba.green * 255), int(rgba.blue * 255))
 
     def _refresh_keyboard_view(self) -> None:
         if not self._current_profile:
@@ -250,9 +299,10 @@ class MainWindow(Adw.ApplicationWindow):
         set_last_profile(self._current_profile.name)
 
         anim_name = self._current_profile.startup_animation
+        profile = self._current_profile
 
         def _apply_in_thread():
-            play_animation(anim_name, self._backend)
+            play_animation(anim_name, self._backend, profile=profile)
             self._backend.set_all_keys(0, 0, 0)
             time.sleep(0.1)
             self._backend.apply_key_colors(colors)

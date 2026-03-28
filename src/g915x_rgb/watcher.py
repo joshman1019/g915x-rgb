@@ -62,7 +62,7 @@ def apply_once(retries: int = 3) -> bool:
         try:
             kb = G915XBackend()
             kb.connect()
-            play_animation(profile.startup_animation, kb)
+            play_animation(profile.startup_animation, kb, profile=profile)
             colors = profile.get_all_key_colors()
             kb.set_all_keys(0, 0, 0)
             time.sleep(0.1)

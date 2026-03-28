@@ -21,6 +21,8 @@ class Profile:
     group_colors: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     key_colors: dict[int, tuple[int, int, int]] = field(default_factory=dict)
     startup_animation: str = ""  # Animation name or empty for none
+    animation_primary: tuple[int, int, int] = (0x00, 0x80, 0xFF)
+    animation_secondary: tuple[int, int, int] = (0xFF, 0x40, 0x80)
     _saved_path: Path | None = field(default=None, repr=False)
 
     def get_effective_color(self, address: int) -> tuple[int, int, int]:
@@ -49,6 +51,8 @@ class Profile:
             "name": self.name,
             "version": 1,
             "startup_animation": self.startup_animation,
+            "animation_primary": f"{self.animation_primary[0]:02x}{self.animation_primary[1]:02x}{self.animation_primary[2]:02x}",
+            "animation_secondary": f"{self.animation_secondary[0]:02x}{self.animation_secondary[1]:02x}{self.animation_secondary[2]:02x}",
             "groups": {
                 g: f"{r:02x}{g_:02x}{b:02x}"
                 for g, (r, g_, b) in self.group_colors.items()
@@ -69,6 +73,10 @@ class Profile:
         elif anim is False:
             anim = ""
         p.startup_animation = anim
+        if "animation_primary" in data:
+            p.animation_primary = _parse_hex(data["animation_primary"])
+        if "animation_secondary" in data:
+            p.animation_secondary = _parse_hex(data["animation_secondary"])
 
         for group, color_hex in data.get("groups", {}).items():
             p.group_colors[group] = _parse_hex(color_hex)
