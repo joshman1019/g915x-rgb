@@ -29,6 +29,7 @@ from .backend import G915XBackend, KeyboardNotFoundError, device_present
 from .config import get_last_profile, get_options, set_last_profile, set_option
 from .idle import IdleWatcher
 from .keyboard_layout import ALL_ADDRESSES, KEY_GROUPS
+from .gkey_actions import get_profile_switch_target, load_gkey_actions
 from .logging_setup import configure as configure_logging
 from .profile import (
     AnimationProfile,
@@ -89,6 +90,7 @@ class Controller:
         self.on_switched = lambda name, reason: None
 
         self._profiles: list[Profile] = []
+        self._gkey_actions: dict[int, dict] = {}
         self._current: Profile | None = None    # last applied, saved profile
         self._shown: Profile | None = None      # what is on the keyboard now
         self._generation = 0
@@ -107,9 +109,18 @@ class Controller:
     def reload_profiles(self) -> list[dict]:
         result = load_all_profiles_with_errors()
         self._profiles = result.profiles
+        self._gkey_actions = load_gkey_actions()
+
         for path, msg in result.errors:
             logger.warning("could not load profile %s: %s", path, msg)
+
+        self._configure_reactive()
         return [{"path": str(p), "error": m} for p, m in result.errors]
+
+    def reload_gkey_actions(self) -> None:
+        """Reload shared G-key actions from disk."""
+        self._gkey_actions = load_gkey_actions()
+        self._configure_reactive()
 
     def find_profile(self, name: str) -> Profile | None:
         for p in self._profiles:
@@ -204,7 +215,7 @@ class Controller:
         elif not present and self._kb.is_connected:
             logger.info("keyboard disconnected")
             self.disconnect()
-        if self._kb.is_connected and self._reactive and not (
+        if self._kb.is_connected and self._needs_key_reader() and not (
                 self._reader and self._reader.is_alive()):
             self._start_reader()
         return True
@@ -333,23 +344,39 @@ class Controller:
     def _set_idle(self, idle: bool) -> None:
         self._idle = idle
 
+    def _needs_key_reader(self) -> bool:
+        profile = self._shown
+        if profile is None:
+            return False
+
+        reactive_enabled = bool(profile.reactive.effect)
+        gkey_actions_enabled = bool(self._gkey_actions)
+
+        return reactive_enabled or gkey_actions_enabled
+
     # ---------- typing effects ----------
     def _configure_reactive(self) -> None:
         cfg = self._shown.reactive if self._shown else None
+
         if cfg is None or not cfg.effect:
             self._reactive = None
             self._renderer.set_reactive_source(None)
-            self._stop_reader()
-            return
-        if self._reactive is None:
-            self._reactive = ReactiveOverlay(cfg.effect, cfg.color, cfg.intensity)
-            self._renderer.set_reactive_source(self._reactive)
         else:
-            self._reactive.effect = cfg.effect
-            self._reactive.color = cfg.color
-            self._reactive.intensity = cfg.intensity
-        if self._kb.is_connected and not (self._reader and self._reader.is_alive()):
-            self._start_reader()
+            if self._reactive is None:
+                self._reactive = ReactiveOverlay(
+                    cfg.effect, cfg.color, cfg.intensity
+                )
+                self._renderer.set_reactive_source(self._reactive)
+            else:
+                self._reactive.effect = cfg.effect
+                self._reactive.color = cfg.color
+                self._reactive.intensity = cfg.intensity
+
+        if self._needs_key_reader() and self._kb.is_connected:
+            if not (self._reader and self._reader.is_alive()):
+                self._start_reader()
+        else:
+            self._stop_reader()
 
     def _start_reader(self) -> None:
         self._stop_reader()
@@ -374,6 +401,16 @@ class Controller:
         overlay = self._reactive
         if overlay is not None:
             overlay.trigger(address)
+
+        self._defer(self._handle_key_pressed, address)
+
+    def _handle_key_pressed(self, address: int) -> None:
+        if self._previewing:
+            return
+
+        target = get_profile_switch_target(self._gkey_actions, address)
+        if target is not None:
+            self.set_profile(target, reason="gkey")
 
     # ---------- application rules ----------
     def reload_rules(self) -> None:
@@ -470,6 +507,10 @@ class Service(dbus.service.Object):
     @dbus.service.method(BUS_NAME, in_signature="", out_signature="s")
     def ReloadProfiles(self):
         return json.dumps(self._c.reload_profiles())
+
+    @dbus.service.method(BUS_NAME, in_signature="", out_signature="")
+    def ReloadGKeyActions(self):
+        self._c.reload_gkey_actions()
 
     @dbus.service.method(BUS_NAME, in_signature="", out_signature="")
     def ReloadRules(self):

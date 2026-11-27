@@ -65,6 +65,19 @@ def test_fill_undo_redo(editor):
     assert editor._p.group_colors["logo"] == (1, 2, 3)
 
 
+def test_gkey_action_saves_without_undo(editor):
+    action = {"type": "switch_profile", "target": "Two"}
+
+    editor.setGKeyAction(180, "switch_profile", "Two")
+
+    assert editor._gkey_actions[180] == action
+    assert not editor.canUndo
+    assert not editor.canRedo
+
+    editor.undo()
+    assert editor._gkey_actions[180] == action
+
+
 def test_blend_spans_the_selection_and_resets(editor):
     editor.selectGroup("fkeys")
     editor.blend("#000000", "#ffffff")

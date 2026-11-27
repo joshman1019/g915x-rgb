@@ -18,6 +18,11 @@ from .daemon_proxy import DaemonProxy
 from .keyboard_layout import (
     ALL_ADDRESSES, G915X_KEYS, KEY_BY_ADDRESS, KEY_GROUPS, LAYOUT_HEIGHT, LAYOUT_WIDTH,
 )
+from .gkey_actions import (
+    load_gkey_actions,
+    rename_profile_target,
+    save_gkey_actions,
+)
 from .profile import (
     Profile, create_default_profile, duplicate_profile, load_all_profiles_with_errors,
     _parse_hex, _rgb_to_hex,
@@ -118,6 +123,7 @@ class Editor(QObject):
         self._daemon.windowPicked.connect(self.windowPicked)
         self._daemon.start()
 
+        self._gkey_actions: dict[int, dict] = {}
         self._load_profiles()
         self._query_login()
 
@@ -129,6 +135,7 @@ class Editor(QObject):
             profile = create_default_profile()
             profile.save()
             self._profiles = [profile]
+        self._gkey_actions = load_gkey_actions()
         for p in self._profiles:
             self._saved[id(p)] = p.to_dict()
         last = get_last_profile()
@@ -138,6 +145,16 @@ class Editor(QObject):
             QTimer.singleShot(0, lambda: self.message.emit(f"Could not read: {names}"))
         self._refresh()
 
+    def _save_gkey_actions(self) -> bool:
+        try:
+            save_gkey_actions(self._gkey_actions)
+        except OSError as e:
+            self.message.emit(f"Could not save G-key actions: {e}")
+            return False
+
+        self._daemon.reload_gkey_actions()
+        return True
+
     @property
     def _p(self) -> Profile:
         return self._profiles[self._index]
@@ -146,6 +163,7 @@ class Editor(QObject):
         self.profilesChanged.emit()
         self.profileChanged.emit()
         self._render()
+
 
     # ---------- editing ----------
     def _begin(self, what: str) -> None:
@@ -194,6 +212,16 @@ class Editor(QObject):
         old = (self._saved.get(id(p)) or {}).get("name")
         try:
             p.save()
+            if old and old != p.name:
+                old_gkey_actions = {
+                    address: dict(action)
+                    for address, action in self._gkey_actions.items()
+                }
+                if rename_profile_target(self._gkey_actions, old, p.name):
+                    if not self._save_gkey_actions():
+                        self._gkey_actions = old_gkey_actions
+                        return False
+
             if old and old != p.name and (self._rules.fallback == old
                                           or any(r.profile == old for r in self._rules.rules)):
                 for r in self._rules.rules:
@@ -205,6 +233,7 @@ class Editor(QObject):
         except OSError as e:
             self.message.emit(f"Could not save: {e.strerror or e}")
             return False
+
         self._saved[id(p)] = p.to_dict()
         self._push.stop()
         self._daemon.apply(p.name)
@@ -370,6 +399,42 @@ class Editor(QObject):
         setattr(target, field, value)
         self._edited()
 
+
+    @Slot(int, str, str)
+    def setGKeyAction(self, address: int, action_type: str, target: str) -> None:
+        if address not in range(0xB4, 0xBD):
+            return
+
+        if action_type == "":
+            action = None
+        elif action_type == "switch_profile":
+            target = target.strip()
+            if not target or target not in {p.name for p in self._profiles}:
+                return
+            action = {"type": action_type, "target": target}
+        else:
+            return
+
+        if self._gkey_actions.get(address) == action:
+            return
+
+        previous = self._gkey_actions.get(address)
+
+        if action is None:
+            self._gkey_actions.pop(address, None)
+        else:
+            self._gkey_actions[address] = action
+
+        if not self._save_gkey_actions():
+            if previous is None:
+                self._gkey_actions.pop(address, None)
+            else:
+                self._gkey_actions[address] = previous
+            return
+
+        self._refresh()
+
+
     @Slot(str)
     def setPage(self, page: str) -> None:
         self._page = page
@@ -416,7 +481,7 @@ class Editor(QObject):
 
     def _on_switched(self, name: str, reason: str) -> None:
         # Follow automatic switches, but never away from unsaved work.
-        if reason.startswith("window:") and not self._is_dirty(self._p):
+        if (reason.startswith("window:") or reason == "gkey") and not self._is_dirty(self._p):
             for i, p in enumerate(self._profiles):
                 if p.name == name and i != self._index:
                     self._index = i
@@ -520,10 +585,22 @@ class Editor(QObject):
         p = self._p
         return {
             "name": p.name, "index": self._index, "dirty": self._is_dirty(p),
-            "canUndo": bool(self._undo.get(id(p))), "canRedo": bool(self._redo.get(id(p))),
+            "canUndo": bool(self._undo.get(id(p))),
+            "canRedo": bool(self._redo.get(id(p))),
             "ambient": anim(p.ambient), "startup": anim(p.startup),
             "reactive": {"effect": p.reactive.effect, "color": _css(p.reactive.color),
                          "intensity": p.reactive.intensity},
+
+            "gkeys": [
+                {
+                    "address": address,
+                    "name": f"G{address - 0xB3}",
+                    "type": self._gkey_actions.get(address, {}).get("type", ""),
+                    "target": self._gkey_actions.get(address, {}).get("target", ""),
+                }
+                for address in range(0xB4, 0xBD)
+            ],
+
             "groups": [{"id": g, "label": label, "count": len(KEY_GROUPS[g]),
                         "color": _css(p.group_colors.get(g, BLACK))}
                        for g, label in GROUP_LABELS.items()],

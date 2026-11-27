@@ -116,7 +116,7 @@ def ctl(home):
     solid("Red", (255, 0, 0)).save()
     solid("Blue", (0, 0, 255)).save()
     kb = FakeKeyboard()
-    c = daemon.Controller(kb, defer=lambda fn: fn())
+    c = daemon.Controller(kb, defer=lambda fn, *args: fn(*args))
     c.reload_profiles()
     config.set_last_profile("Red")
     c.connect()
@@ -155,6 +155,45 @@ def test_transition_ends_on_the_new_profile(ctl):
     c, kb = ctl
     assert c.set_profile("Blue", "fade")
     assert all_lit(kb, (0, 0, 255))
+
+
+def test_gkey_action_persists_across_profile_switches(ctl):
+    c, _ = ctl
+    g1 = KEY_GROUPS["gkeys"][0].address
+
+    c._gkey_actions[g1] = {
+        "type": "switch_profile",
+        "target": "Blue",
+    }
+
+    c._key_pressed(g1)
+    assert c.status.current_profile == "Blue"
+
+    c.set_profile("Red")
+    assert c.status.current_profile == "Red"
+
+    c._key_pressed(g1)
+    assert c.status.current_profile == "Blue"
+
+
+def test_gkey_action_does_not_switch_profile_during_preview(ctl):
+    c, _ = ctl
+    g1 = KEY_GROUPS["gkeys"][0].address
+
+    c._gkey_actions[g1] = {
+        "type": "switch_profile",
+        "target": "Blue",
+    }
+
+    c.preview(json.dumps(solid("tmp", (1, 2, 3)).to_dict()))
+    c._key_pressed(g1)
+
+    assert c.status.current_profile == "Red"
+
+    c.stop_preview()
+    c._key_pressed(g1)
+
+    assert c.status.current_profile == "Blue"
 
 
 def test_replaced_startup_effect_does_not_return(ctl):

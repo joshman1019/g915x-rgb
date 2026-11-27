@@ -44,7 +44,6 @@ def test_v2_round_trip_preserves_all_fields():
     )
     p.group_colors["keys"] = (200, 200, 200)
     p.key_colors[0x10] = (50, 60, 70)
-
     p2 = Profile.from_dict(p.to_dict())
     assert p2.name == "New"
     assert p2.startup.name == "comet"
@@ -57,6 +56,7 @@ def test_v2_round_trip_preserves_all_fields():
     assert abs(p2.reactive.intensity - 1.2) < 1e-9
     assert p2.group_colors["keys"] == (200, 200, 200)
     assert p2.key_colors[0x10] == (50, 60, 70)
+    assert "gkey_actions" not in p2.to_dict()
 
 
 def test_legacy_property_setters_still_work():

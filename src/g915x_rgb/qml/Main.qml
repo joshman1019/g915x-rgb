@@ -9,7 +9,7 @@ Kirigami.ApplicationWindow {
     id: window
 
     required property var editor
-    readonly property var pages: ["colors", "effects", "typing", "rules", "device"]
+    readonly property var pages: ["colors", "effects", "typing", "macros", "rules", "device"]
     property int page: 0
     property bool closing: false
 
@@ -120,6 +120,7 @@ Kirigami.ApplicationWindow {
                     QQC2.TabButton { text: qsTr("Colors"); icon.name: "color-management" }
                     QQC2.TabButton { text: qsTr("Effects"); icon.name: "media-playback-start" }
                     QQC2.TabButton { text: qsTr("Typing"); icon.name: "input-keyboard" }
+                    QQC2.TabButton { text: qsTr("Macros"); icon.name: "configure-shortcuts" }
                     QQC2.TabButton { text: qsTr("App rules"); icon.name: "preferences-system-windows" }
                     QQC2.TabButton { text: qsTr("Device"); icon.name: "configure" }
                 }
@@ -145,7 +146,7 @@ Kirigami.ApplicationWindow {
 
                     Loader {
                         width: scroll.availableWidth
-                        sourceComponent: [colorsPage, effectsPage, typingPage, rulesPage, devicePage][window.page]
+                        sourceComponent: [colorsPage, effectsPage, typingPage, macrosPage, rulesPage, devicePage][window.page]
                     }
                 }
             }
@@ -155,6 +156,7 @@ Kirigami.ApplicationWindow {
     Component { id: colorsPage; ColorsPage { editor: window.editor } }
     Component { id: effectsPage; EffectsPage { editor: window.editor } }
     Component { id: typingPage; TypingPage { editor: window.editor } }
+    Component { id: macrosPage; MacrosPage { editor: window.editor } }
     Component { id: rulesPage; RulesPage { editor: window.editor } }
     Component { id: devicePage; DevicePage { editor: window.editor } }
 

@@ -73,6 +73,9 @@ class DaemonProxy(QObject):
     def reload_rules(self) -> None:
         self._call("ReloadRules")
 
+    def reload_gkey_actions(self) -> None:
+        self._call("ReloadGKeyActions")
+
     def set_option(self, name: str, value_json: str) -> None:
         self._call("SetOption", name, value_json)
 
